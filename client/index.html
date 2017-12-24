@@ -1,0 +1,194 @@
+<html>
+<head>
+  <title>Bootstrap 101 Template</title>
+
+  <script type="text/javascript" src="jquery-3.2.1.min.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+
+    <style type="text/css">
+body {
+padding-top: 40px;
+padding-bottom: 40px;
+background-color: #eee;
+}
+
+.form-details {
+max-width: 330px;
+padding: 15px;
+margin: 0 auto;
+}
+.form-details .form-details-heading,
+.form-details .checkbox {
+margin-bottom: 10px;
+}
+.form-details .checkbox {
+font-weight: normal;
+}
+.form-details .form-control {
+position: relative;
+height: auto;
+padding: 10px;
+font-size: 16px;
+}
+.form-details .form-control:focus {
+z-index: 2;
+}
+    </style>
+
+</head>
+
+<body onresize="resizeFunc()">
+
+  <div class="container">
+
+    <form class="form-details" id="inputs" method="post">
+
+      <h2 class="form-details-heading">Details</h2>
+
+      <label for="inputEmail" class="sr-only">Email address</label>
+      <input type="email" id="inputEmail" class="form-control"
+      placeholder="Email address" required autofocus>
+
+      <label for="inputCardNumber" class="sr-only">Card Number</label>
+      <input type="text" id="inputCardNumber" class="form-control"
+      placeholder="Card Number" required>
+
+      <label for="inputCVV" class="sr-only">CVV</label>
+      <input type="text" id="inputCVV" class="form-control"
+      placeholder="Security Code" required>
+
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" value="agree"> Agree to Terms
+        </label>
+      </div>
+
+      <button class="btn btn-lg btn-primary btn-block" type="submit" onclick="getTime()">Submit</button>
+    </form>
+
+  </div> <!-- /container -->
+
+
+
+
+  <!-- The JS script -->
+  <script type="text/javascript">
+
+  //The session parameters
+  var myUrl = window.location.href;
+  var mySessionId = '"' + Math.floor((Math.random() * 100000) + 1) + '"'
+  var xmlhttp = new XMLHttpRequest(); //The request that will send data
+
+
+
+
+  //The resize part
+  var resized = false;
+  var originalWidth = $(window).width();
+  var originalHeight = $(window).height();
+  function resizeFunc() {
+    //this function is called in the body tag when resize occurs
+    if (resized === false) {
+      var oldWidth = '"' + originalWidth + '"';
+      var oldHeight = '"' + originalHeight + '"';
+      var width = '"' + $(window).width() + '"';
+      var height = '"' + $(window).height() + '"';
+      resized = true;
+
+      var resizeRequest = { "EventType": "resize",
+                            "WebsiteUrl": myUrl,
+                            "SessionId": mySessionId,
+                            "ResizeFrom": { "Width": oldWidth,
+                                            "Height": oldHeight
+                                          },
+                            "ResizeTo": { "Width": width,
+                                          "Height": height
+                                        }
+                          };
+      var resizeRequestJSON = JSON.stringify(resizeRequest);
+
+      xmlhttp.open("POST","http://localhost:8080/data");
+      xmlhttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded;charset=UTF-8");
+      xmlhttp.send(resizeRequestJSON);
+      console.log('resize request, POST:', resizeRequest); //log of the object sent
+    }
+    else if (resized === true) {
+    }
+  }
+
+
+  //The Copy&Paste part
+  document.addEventListener('paste', function (e) {
+    var data;
+    data = e.clipboardData.getData('text');
+    myFormId = e.target.id; //the id of the field where text is pasted
+
+    var FormIds = ["inputEmail", "inputCardNumber", "inputCVV"];
+    var myMap = new Map();
+    myMap.set(FormIds[0], false);
+    myMap.set(FormIds[1], false);
+    myMap.set(FormIds[2], false);
+
+
+    var cpRequest = { "EventType": "copyAndPaste",
+                      "WebsiteUrl": myUrl,
+                      "SessionId": mySessionId,
+                      "FormId": myFormId,
+                      "Pasted": true
+                    };
+    var cpRequestJSON = JSON.stringify(cpRequest);
+
+    xmlhttp.open("POST","http://localhost:8080/data");
+    xmlhttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded;charset=UTF-8");
+    xmlhttp.send(cpRequestJSON);
+    console.log('copy & paste request, POST:', cpRequestJSON); //log of the object sent
+  });
+
+
+  //The Timer part
+  var timer = document.getElementById('timer');
+  var firstkeypressed = false;
+  var sec = 0;
+  var myTime = 0;
+  document.addEventListener('keyup', function () {
+    if (firstkeypressed === false) {
+      //start timer
+      timer = setInterval(function () {
+        sec++;
+      }, 1000);
+      firstkeypressed = true;
+    }
+    else if (firstkeypressed === true) {
+    }
+  });
+
+  function getTime () {
+    //this function is called when the submit button is pressed
+    myTime = sec;
+
+    var timeRequest = { "EventType": "timeTaken",
+                        "WebsiteUrl": myUrl,
+                        "SessionId": mySessionId,
+                        "FormCompletionTime": myTime
+                      };
+    var timeRequestJSON = JSON.stringify(timeRequest);
+
+    var testJSON = '{"EventType":"coucou", "sessionId":"18687"}';
+
+    xmlhttp.open("POST","http://localhost:8080/submit");
+    xmlhttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded;charset=UTF-8");
+    xmlhttp.send(timeRequestJSON);
+    console.log('time request, POST:', timeRequest); //log of the object sent
+  }
+
+  </script>
+
+
+</body>
+</html>
