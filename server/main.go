@@ -91,7 +91,7 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 		tempStruct.CopyAndPaste[req.FormId] = req.Pasted
 	}
 
-	log.Printf("State of the struct under construction:\n %+v \n", tempStruct)
+	log.Printf("State of the struct under construction:\n \x1B[33m %+v \n \x1B[0m", tempStruct)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -126,7 +126,7 @@ func submitHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("last event: %s", os)
 		tempStruct.FormCompletionTime = req.FormCompletionTime
 	}
-	log.Printf("Button pressed! Here's the struct:\n %+v \n", tempStruct)
+	log.Printf("\x1B[32m Button pressed! Here is the struct:\n %+v \n \x1B[0m" , tempStruct)
 
 	w.WriteHeader(http.StatusOK)
 }
