@@ -6,26 +6,28 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
-var tempStruct Data //The struct that will be constructed
+
+var ck http.Cookie
 
 
 func main() {
+
 	http.HandleFunc("/data", dataHandler)
 	http.HandleFunc("/submit", submitHandler)
 
-	//Initialization of the map used in tempStruct
-	tempStruct.CopyAndPaste = make(map[string]bool)
-	tempStruct.CopyAndPaste["inputEmail"] = false
-	tempStruct.CopyAndPaste["inputCardNumber"] = false
-	tempStruct.CopyAndPaste["inputCVV"] = false
+	//The cookie initialization
+	expires := time.Now().AddDate(0, 0, 1)
+	ck = http.Cookie{Name: "DataCookie", Value: "", Expires: expires, HttpOnly: true}
 
 	fmt.Println("Server now running on localhost:8080")
 	fmt.Println(`Try running: curl -X POST -d '{"WebsiteUrl":"test123"}' http://localhost:8080/data ...`)
 	fmt.Println("You can now use the form at '../server/index.html' \n")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
+
 
 
 type Dimension struct {
@@ -42,7 +44,7 @@ type Data struct {
 	FormCompletionTime int	`json:"formcompletiontime,omitempty"` // Seconds
 }
 
-type reqData struct {
+type reqData struct { //the struct of the request sent by the frontend
 	EventType					 string `json:"eventtype,omitempty"`
 	WebsiteUrl         string	`json:"websiteurl,omitempty"`
 	SessionId          string	`json:"sessionid,omitempty"`
@@ -56,9 +58,9 @@ type reqData struct {
 
 
 
-
 func dataHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
+
 	//log.Printf("Request received: %s, %s", body, err)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -73,25 +75,50 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Unable to unmarshal JSON request"))
 		return
 	}
-	//log.Printf("route /data called with request: %+v", req)
 
-	//Initialization of the struct under construction
-	tempStruct.WebsiteUrl = req.WebsiteUrl
-	tempStruct.SessionId = req.SessionId
+	//Unmarshall of the received cookie in tempDataStruct, in order to modify it to send it back
+	tempDataStruct := Data{}
+	tempDataStruct.CopyAndPaste = make(map[string]bool) //Initialization of the CP map in the struct
+	json.Unmarshal([]byte(ck.Value), &tempDataStruct)
+	log.Printf("cookie unmarshalled:", tempDataStruct)
 
-	//construction of the struct with the JSON received
+	tempDataStruct.WebsiteUrl = req.WebsiteUrl
+	tempDataStruct.SessionId = req.SessionId
+
+	//construction of the struct with the JSON request received
 	switch os := req.EventType; os {
 	case "resize":
 		log.Printf("last event: %s", os)
-		tempStruct.ResizeFrom = req.ResizeFrom
-		tempStruct.ResizeTo = req.ResizeTo
+
+		tempDataStruct.ResizeFrom = req.ResizeFrom
+		tempDataStruct.ResizeTo = req.ResizeTo
+
+		log.Printf("cookie unmarshalled and modified:", tempDataStruct)
 
 	case "copyAndPaste":
 		log.Printf("last event: %s", os)
-		tempStruct.CopyAndPaste[req.FormId] = req.Pasted
+
+		tempDataStruct.CopyAndPaste[req.FormId] = req.Pasted
+
+		log.Printf("cookie unmarshalled and modified:", tempDataStruct)
 	}
 
-	log.Printf("State of the struct under construction:\n \x1B[33m %+v \n \x1B[0m", tempStruct)
+	//Store the new value of the cookie
+	tempFinal, _ := json.Marshal(&tempDataStruct)
+	ck.Value = string(tempFinal)
+	// write the cookie to response
+	log.Printf("cookie sent:", ck)
+	http.SetCookie(w, &ck)
+
+
+	log.Printf("State of the struct under construction:\n \x1B[33m %+v \n \x1B[0m", ck.Value)
+
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "null")
+	w.Header().Set("Access-Control-Allow-Methods", "POST")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -100,6 +127,7 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 
 func submitHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
+
 	//log.Printf("Request received: %s, %s", body, err)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -115,18 +143,40 @@ func submitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//Initialization of the struct under construction
-	tempStruct.WebsiteUrl = req.WebsiteUrl
-	tempStruct.SessionId = req.SessionId
+	//Unmarshall of the received cookie in tempDataStruct, in order to modify it to send it back
+	tempDataStruct := Data{}
+	tempDataStruct.CopyAndPaste = make(map[string]bool) //Initialization of the CP map in the struct
+	json.Unmarshal([]byte(ck.Value), &tempDataStruct)
+	log.Printf("cookie unmarshalled:", tempDataStruct)
+
+	tempDataStruct.WebsiteUrl = req.WebsiteUrl
+	tempDataStruct.SessionId = req.SessionId
 
 	//construction of the struct with the JSON received
 	//We only consider the timeTaken event
 	switch os := req.EventType; os {
 	case "timeTaken":
 		log.Printf("last event: %s", os)
-		tempStruct.FormCompletionTime = req.FormCompletionTime
+
+		tempDataStruct.FormCompletionTime = req.FormCompletionTime
+
+		log.Printf("cookie unmarshalled and modified:", tempDataStruct)
 	}
-	log.Printf("\x1B[32m Button pressed! Here is the struct:\n %+v \n \x1B[0m" , tempStruct)
+
+	//Store the new value of the cookie
+	tempFinal, _ := json.Marshal(&tempDataStruct)
+	ck.Value = string(tempFinal)
+	// write the cookie to response
+	log.Printf("cookie sent:", ck)
+	http.SetCookie(w, &ck)
+
+	log.Printf("\x1B[32m Button pressed! Here is the final struct:\n %+v \n \x1B[0m" , ck.Value)
+
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "null")
+	w.Header().Set("Access-Control-Allow-Methods", "POST")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	w.WriteHeader(http.StatusOK)
 }
