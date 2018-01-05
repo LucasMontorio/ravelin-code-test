@@ -115,6 +115,7 @@ z-index: 2;
 
       xmlhttp.open("POST","http://localhost:8080/data");
       xmlhttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded;charset=UTF-8");
+      xmlhttp.withCredentials = true;
       xmlhttp.send(resizeRequestJSON);
       console.log('resize request, POST:', resizeRequest); //log of the object sent
     }
@@ -146,6 +147,7 @@ z-index: 2;
 
     xmlhttp.open("POST","http://localhost:8080/data");
     xmlhttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded;charset=UTF-8");
+    xmlhttp.withCredentials = true;
     xmlhttp.send(cpRequestJSON);
     console.log('copy & paste request, POST:', cpRequestJSON); //log of the object sent
   });
@@ -183,6 +185,7 @@ z-index: 2;
 
     xmlhttp.open("POST","http://localhost:8080/submit");
     xmlhttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded;charset=UTF-8");
+    xmlhttp.withCredentials = true;
     xmlhttp.send(timeRequestJSON);
     console.log('time request, POST:', timeRequest); //log of the object sent
   }
