@@ -15,6 +15,7 @@ var ck http.Cookie
 
 func main() {
 
+	http.Handle("/", http.FileServer(http.Dir("../client")))
 	http.HandleFunc("/data", dataHandler)
 	http.HandleFunc("/submit", submitHandler)
 
@@ -36,12 +37,12 @@ type Dimension struct {
 }
 
 type Data struct {
-	WebsiteUrl         string	`json:"websiteurl,omitempty"`
-	SessionId          string	`json:"sessionid,omitempty"`
-	ResizeFrom         Dimension	`json:"resizefrom,omitempty"`
-	ResizeTo           Dimension	`json:"resizeto,omitempty"`
-	CopyAndPaste       map[string]bool	`json:"copyandpaste,omitempty"` // map[fieldId]true
-	FormCompletionTime int	`json:"formcompletiontime,omitempty"` // Seconds
+	WebsiteUrl         string	`json:"websiteurl"`
+	SessionId          string	`json:"sessionid"`
+	ResizeFrom         Dimension	`json:"resizefrom"`
+	ResizeTo           Dimension	`json:"resizeto"`
+	CopyAndPaste       map[string]bool	`json:"copyandpaste"` // map[fieldId]true
+	FormCompletionTime int	`json:"formcompletiontime"` // Seconds
 }
 
 type reqData struct { //the struct of the request sent by the frontend
@@ -54,7 +55,6 @@ type reqData struct { //the struct of the request sent by the frontend
 	Pasted						 bool				`json:"pasted,omitempty"`
 	FormCompletionTime int	`json:"formcompletiontime,omitempty"` // Seconds
 }
-
 
 
 
@@ -80,7 +80,7 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 	tempDataStruct := Data{}
 	tempDataStruct.CopyAndPaste = make(map[string]bool) //Initialization of the CP map in the struct
 	json.Unmarshal([]byte(ck.Value), &tempDataStruct)
-	log.Printf("cookie unmarshalled:", tempDataStruct)
+	//log.Printf("cookie unmarshalled:", tempDataStruct)
 
 	tempDataStruct.WebsiteUrl = req.WebsiteUrl
 	tempDataStruct.SessionId = req.SessionId
@@ -93,21 +93,19 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 		tempDataStruct.ResizeFrom = req.ResizeFrom
 		tempDataStruct.ResizeTo = req.ResizeTo
 
-		log.Printf("cookie unmarshalled and modified:", tempDataStruct)
 
 	case "copyAndPaste":
 		log.Printf("last event: %s", os)
 
 		tempDataStruct.CopyAndPaste[req.FormId] = req.Pasted
 
-		log.Printf("cookie unmarshalled and modified:", tempDataStruct)
 	}
 
 	//Store the new value of the cookie
 	tempFinal, _ := json.Marshal(&tempDataStruct)
 	ck.Value = string(tempFinal)
 	// write the cookie to response
-	log.Printf("cookie sent:", ck)
+	//log.Printf("cookie sent:", ck)
 	http.SetCookie(w, &ck)
 
 
@@ -147,7 +145,7 @@ func submitHandler(w http.ResponseWriter, r *http.Request) {
 	tempDataStruct := Data{}
 	tempDataStruct.CopyAndPaste = make(map[string]bool) //Initialization of the CP map in the struct
 	json.Unmarshal([]byte(ck.Value), &tempDataStruct)
-	log.Printf("cookie unmarshalled:", tempDataStruct)
+	//log.Printf("cookie unmarshalled:", tempDataStruct)
 
 	tempDataStruct.WebsiteUrl = req.WebsiteUrl
 	tempDataStruct.SessionId = req.SessionId
@@ -160,14 +158,13 @@ func submitHandler(w http.ResponseWriter, r *http.Request) {
 
 		tempDataStruct.FormCompletionTime = req.FormCompletionTime
 
-		log.Printf("cookie unmarshalled and modified:", tempDataStruct)
 	}
 
 	//Store the new value of the cookie
 	tempFinal, _ := json.Marshal(&tempDataStruct)
 	ck.Value = string(tempFinal)
 	// write the cookie to response
-	log.Printf("cookie sent:", ck)
+	//log.Printf("cookie sent:", ck)
 	http.SetCookie(w, &ck)
 
 	log.Printf("\x1B[32m Button pressed! Here is the final struct:\n %+v \n \x1B[0m" , ck.Value)
